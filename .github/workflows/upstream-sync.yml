@@ -1,0 +1,49 @@
+name: Upstream Skills Sync
+
+on:
+  schedule:
+    # Runs every Monday at 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Upstream Sync
+        run: |
+          python3 sync-upstream.py --all
+
+      - name: Create Pull Request for Review
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(upstream): automated sync with official skills"
+          title: "🤖 chore(upstream): sync with latest official skills"
+          body: |
+            ### 自动追更官方上游技能库
+
+            本 PR 由 GitHub Actions 自动化流水线触发，依据 `skills-manifest.json` 自动同步了各大官方开源技能的最新代码。
+            
+            - **保护机制**：自研与专属技能（`yao-service`、`handoff` 等）已受保护，未受影响。
+            - **审核建议**：请检查下方 Files Changed 查看官方 Prompt 或工具定义的具体变动，确认无误后点击 Merge。
+            - **本地生效**：合并后只需在本地执行 `cd ~/.skillshub && git pull` 即可全端同步。
+          branch: chore/upstream-sync-bot
+          delete-branch: true
+          labels: |
+            automated-pr
+            upstream-sync

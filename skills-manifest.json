@@ -1,0 +1,874 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-09-18T21:42:00Z",
+  "upstreams": {
+    "gstack": {
+      "name": "Garry Tan GStack Skills",
+      "repo": "https://github.com/garrytan/gstack.git",
+      "branch": "main",
+      "skills_dir": ".agents/skills"
+    },
+    "samber-golang": {
+      "name": "Samber Go Engineering Skills",
+      "repo": "https://github.com/samber/cc-skills-golang.git",
+      "branch": "main"
+    },
+    "mattpocock": {
+      "name": "Matt Pocock TypeScript & AI Skills",
+      "repo": "https://github.com/mattpocock/skills.git",
+      "branch": "main"
+    },
+    "superpowers": {
+      "name": "Superpowers Agent Workflow Skills",
+      "repo": "https://github.com/obra/superpowers.git",
+      "branch": "main",
+      "skills_dir": "skills"
+    },
+    "planning-with-files": {
+      "name": "Planning with Files (Manus style)",
+      "repo": "https://github.com/OthmanAdi/planning-with-files.git",
+      "branch": "master",
+      "skills_dir": "skills"
+    },
+    "anthropic": {
+      "name": "Anthropic Official Skills",
+      "repo": "https://github.com/anthropics/skills.git",
+      "branch": "main",
+      "skills_dir": "skills"
+    },
+    "vercel": {
+      "name": "Vercel Labs Agent Skills",
+      "repo": "https://github.com/vercel-labs/agent-skills.git",
+      "branch": "main",
+      "skills_dir": "skills"
+    },
+    "skill_share": {
+      "name": "Skill Share Community Collection",
+      "repo": "https://github.com/alffei/skill_share.git",
+      "branch": "main"
+    }
+  },
+  "custom_protected": [
+    "yao-service",
+    "handoff",
+    "cn-resume-optimizer-main"
+  ],
+  "skills": {
+    "_gstack-command": {
+      "source": "gstack"
+    },
+    "adversarial-document-reviewer": {
+      "source": "anthropic"
+    },
+    "adversarial-reviewer": {
+      "source": "anthropic"
+    },
+    "agent-native-architecture": {
+      "source": "skill_share"
+    },
+    "agent-native-audit": {
+      "source": "anthropic"
+    },
+    "agent-native-reviewer": {
+      "source": "anthropic"
+    },
+    "andrew-kane-gem-writer": {
+      "source": "skill_share"
+    },
+    "ankane-readme-writer": {
+      "source": "skill_share"
+    },
+    "api-contract-reviewer": {
+      "source": "anthropic"
+    },
+    "architecture-strategist": {
+      "source": "skill_share"
+    },
+    "ask-matt": {
+      "source": "mattpocock"
+    },
+    "autoplan": {
+      "source": "gstack"
+    },
+    "banner-design": {
+      "source": "skill_share"
+    },
+    "benchmark": {
+      "source": "gstack"
+    },
+    "benchmark-models": {
+      "source": "gstack"
+    },
+    "best-practices-researcher": {
+      "source": "skill_share"
+    },
+    "brand": {
+      "source": "skill_share"
+    },
+    "browse": {
+      "source": "gstack"
+    },
+    "canary": {
+      "source": "gstack"
+    },
+    "careful": {
+      "source": "gstack"
+    },
+    "caveman": {
+      "source": "skill_share"
+    },
+    "ce-brainstorm": {
+      "source": "superpowers"
+    },
+    "ce-compound": {
+      "source": "superpowers"
+    },
+    "ce-compound-refresh": {
+      "source": "superpowers"
+    },
+    "ce-debug": {
+      "source": "superpowers"
+    },
+    "ce-demo-reel": {
+      "source": "superpowers"
+    },
+    "ce-ideate": {
+      "source": "superpowers"
+    },
+    "ce-plan": {
+      "source": "superpowers"
+    },
+    "ce-review": {
+      "source": "superpowers"
+    },
+    "ce-sessions": {
+      "source": "superpowers"
+    },
+    "ce-setup": {
+      "source": "superpowers"
+    },
+    "ce-slack-research": {
+      "source": "superpowers"
+    },
+    "ce-work": {
+      "source": "superpowers"
+    },
+    "ce-work-beta": {
+      "source": "superpowers"
+    },
+    "changelog": {
+      "source": "skill_share"
+    },
+    "claude-handoff": {
+      "source": "skill_share"
+    },
+    "claude-permissions-optimizer": {
+      "source": "skill_share"
+    },
+    "cli-agent-readiness-reviewer": {
+      "source": "anthropic"
+    },
+    "cli-readiness-reviewer": {
+      "source": "anthropic"
+    },
+    "cn-resume-optimizer-main": {
+      "source": "custom",
+      "protected": true
+    },
+    "code-review": {
+      "source": "skill_share"
+    },
+    "code-simplicity-reviewer": {
+      "source": "anthropic"
+    },
+    "codebase-design": {
+      "source": "mattpocock"
+    },
+    "codex": {
+      "source": "skill_share"
+    },
+    "coherence-reviewer": {
+      "source": "anthropic"
+    },
+    "connect-chrome": {
+      "source": "skill_share"
+    },
+    "context-restore": {
+      "source": "gstack"
+    },
+    "context-save": {
+      "source": "gstack"
+    },
+    "correctness-reviewer": {
+      "source": "anthropic"
+    },
+    "cso": {
+      "source": "gstack"
+    },
+    "data-integrity-guardian": {
+      "source": "anthropic"
+    },
+    "data-migration-expert": {
+      "source": "skill_share"
+    },
+    "data-migrations-reviewer": {
+      "source": "anthropic"
+    },
+    "deploy-docs": {
+      "source": "skill_share"
+    },
+    "deployment-verification-agent": {
+      "source": "skill_share"
+    },
+    "design": {
+      "source": "skill_share"
+    },
+    "design-an-interface": {
+      "source": "mattpocock"
+    },
+    "design-consultation": {
+      "source": "gstack"
+    },
+    "design-html": {
+      "source": "gstack"
+    },
+    "design-implementation-reviewer": {
+      "source": "anthropic"
+    },
+    "design-iterator": {
+      "source": "skill_share"
+    },
+    "design-lens-reviewer": {
+      "source": "anthropic"
+    },
+    "design-review": {
+      "source": "gstack"
+    },
+    "design-shotgun": {
+      "source": "gstack"
+    },
+    "design-system": {
+      "source": "skill_share"
+    },
+    "devex-review": {
+      "source": "gstack"
+    },
+    "dhh-rails-reviewer": {
+      "source": "anthropic"
+    },
+    "dhh-rails-style": {
+      "source": "skill_share"
+    },
+    "diagnose": {
+      "source": "skill_share"
+    },
+    "diagnosing-bugs": {
+      "source": "skill_share"
+    },
+    "diagram": {
+      "source": "gstack"
+    },
+    "document-generate": {
+      "source": "skill_share"
+    },
+    "document-release": {
+      "source": "skill_share"
+    },
+    "document-review": {
+      "source": "skill_share"
+    },
+    "domain-modeling": {
+      "source": "mattpocock"
+    },
+    "dspy-ruby": {
+      "source": "skill_share"
+    },
+    "edit-article": {
+      "source": "skill_share"
+    },
+    "every-style-editor": {
+      "source": "skill_share"
+    },
+    "feasibility-reviewer": {
+      "source": "anthropic"
+    },
+    "figma-design-sync": {
+      "source": "skill_share"
+    },
+    "framework-docs-researcher": {
+      "source": "skill_share"
+    },
+    "freeze": {
+      "source": "gstack"
+    },
+    "frontend-design": {
+      "source": "skill_share"
+    },
+    "gemini-imagegen": {
+      "source": "skill_share"
+    },
+    "git-clean-gone-branches": {
+      "source": "skill_share"
+    },
+    "git-commit": {
+      "source": "skill_share"
+    },
+    "git-commit-push-pr": {
+      "source": "skill_share"
+    },
+    "git-guardrails-claude-code": {
+      "source": "anthropic"
+    },
+    "git-history-analyzer": {
+      "source": "skill_share"
+    },
+    "git-worktree": {
+      "source": "skill_share"
+    },
+    "golang-benchmark": {
+      "source": "samber-golang"
+    },
+    "golang-cli": {
+      "source": "samber-golang"
+    },
+    "golang-code-style": {
+      "source": "samber-golang"
+    },
+    "golang-concurrency": {
+      "source": "samber-golang"
+    },
+    "golang-context": {
+      "source": "samber-golang"
+    },
+    "golang-continuous-integration": {
+      "source": "samber-golang"
+    },
+    "golang-data-structures": {
+      "source": "samber-golang"
+    },
+    "golang-database": {
+      "source": "samber-golang"
+    },
+    "golang-dependency-injection": {
+      "source": "samber-golang"
+    },
+    "golang-dependency-management": {
+      "source": "samber-golang"
+    },
+    "golang-design-patterns": {
+      "source": "samber-golang"
+    },
+    "golang-documentation": {
+      "source": "samber-golang"
+    },
+    "golang-error-handling": {
+      "source": "samber-golang"
+    },
+    "golang-google-wire": {
+      "source": "samber-golang"
+    },
+    "golang-gopls": {
+      "source": "samber-golang"
+    },
+    "golang-graphql": {
+      "source": "samber-golang"
+    },
+    "golang-grpc": {
+      "source": "samber-golang"
+    },
+    "golang-how-to": {
+      "source": "samber-golang"
+    },
+    "golang-lint": {
+      "source": "samber-golang"
+    },
+    "golang-modernize": {
+      "source": "samber-golang"
+    },
+    "golang-naming": {
+      "source": "samber-golang"
+    },
+    "golang-observability": {
+      "source": "samber-golang"
+    },
+    "golang-performance": {
+      "source": "samber-golang"
+    },
+    "golang-pkg-go-dev": {
+      "source": "samber-golang"
+    },
+    "golang-popular-libraries": {
+      "source": "samber-golang"
+    },
+    "golang-project-layout": {
+      "source": "samber-golang"
+    },
+    "golang-refactoring": {
+      "source": "samber-golang"
+    },
+    "golang-safety": {
+      "source": "samber-golang"
+    },
+    "golang-samber-do": {
+      "source": "samber-golang"
+    },
+    "golang-samber-hot": {
+      "source": "samber-golang"
+    },
+    "golang-samber-lo": {
+      "source": "samber-golang"
+    },
+    "golang-samber-mo": {
+      "source": "samber-golang"
+    },
+    "golang-samber-oops": {
+      "source": "samber-golang"
+    },
+    "golang-samber-ro": {
+      "source": "samber-golang"
+    },
+    "golang-samber-slog": {
+      "source": "samber-golang"
+    },
+    "golang-security": {
+      "source": "samber-golang"
+    },
+    "golang-spf13-cobra": {
+      "source": "samber-golang"
+    },
+    "golang-spf13-viper": {
+      "source": "samber-golang"
+    },
+    "golang-stay-updated": {
+      "source": "samber-golang"
+    },
+    "golang-stretchr-testify": {
+      "source": "samber-golang"
+    },
+    "golang-structs-interfaces": {
+      "source": "samber-golang"
+    },
+    "golang-swagger": {
+      "source": "samber-golang"
+    },
+    "golang-testing": {
+      "source": "samber-golang"
+    },
+    "golang-troubleshooting": {
+      "source": "samber-golang"
+    },
+    "golang-uber-dig": {
+      "source": "samber-golang"
+    },
+    "golang-uber-fx": {
+      "source": "samber-golang"
+    },
+    "grill-me": {
+      "source": "mattpocock"
+    },
+    "grill-with-docs": {
+      "source": "skill_share"
+    },
+    "grilling": {
+      "source": "mattpocock"
+    },
+    "gstack": {
+      "source": "gstack"
+    },
+    "gstack-autoplan": {
+      "source": "gstack"
+    },
+    "gstack-benchmark": {
+      "source": "gstack"
+    },
+    "gstack-browse": {
+      "source": "gstack"
+    },
+    "gstack-canary": {
+      "source": "gstack"
+    },
+    "gstack-careful": {
+      "source": "gstack"
+    },
+    "gstack-cso": {
+      "source": "gstack"
+    },
+    "gstack-design-consultation": {
+      "source": "gstack"
+    },
+    "gstack-design-review": {
+      "source": "gstack"
+    },
+    "gstack-document-release": {
+      "source": "gstack"
+    },
+    "gstack-freeze": {
+      "source": "gstack"
+    },
+    "gstack-guard": {
+      "source": "gstack"
+    },
+    "gstack-investigate": {
+      "source": "gstack"
+    },
+    "gstack-land-and-deploy": {
+      "source": "gstack"
+    },
+    "gstack-office-hours": {
+      "source": "gstack"
+    },
+    "gstack-plan-ceo-review": {
+      "source": "gstack"
+    },
+    "gstack-plan-design-review": {
+      "source": "gstack"
+    },
+    "gstack-plan-eng-review": {
+      "source": "gstack"
+    },
+    "gstack-qa": {
+      "source": "gstack"
+    },
+    "gstack-qa-only": {
+      "source": "gstack"
+    },
+    "gstack-retro": {
+      "source": "gstack"
+    },
+    "gstack-review": {
+      "source": "gstack"
+    },
+    "gstack-setup-browser-cookies": {
+      "source": "gstack"
+    },
+    "gstack-setup-deploy": {
+      "source": "gstack"
+    },
+    "gstack-ship": {
+      "source": "gstack"
+    },
+    "gstack-unfreeze": {
+      "source": "gstack"
+    },
+    "gstack-upgrade": {
+      "source": "gstack"
+    },
+    "guard": {
+      "source": "gstack"
+    },
+    "handoff": {
+      "source": "custom",
+      "protected": true
+    },
+    "health": {
+      "source": "gstack"
+    },
+    "implement": {
+      "source": "skill_share"
+    },
+    "improve-codebase-architecture": {
+      "source": "skill_share"
+    },
+    "investigate": {
+      "source": "gstack"
+    },
+    "ios-clean": {
+      "source": "gstack"
+    },
+    "ios-design-review": {
+      "source": "gstack"
+    },
+    "ios-fix": {
+      "source": "gstack"
+    },
+    "ios-qa": {
+      "source": "gstack"
+    },
+    "ios-sync": {
+      "source": "gstack"
+    },
+    "issue-intelligence-analyst": {
+      "source": "skill_share"
+    },
+    "julik-frontend-races-reviewer": {
+      "source": "anthropic"
+    },
+    "kieran-python-reviewer": {
+      "source": "anthropic"
+    },
+    "kieran-rails-reviewer": {
+      "source": "anthropic"
+    },
+    "kieran-typescript-reviewer": {
+      "source": "anthropic"
+    },
+    "land-and-deploy": {
+      "source": "gstack"
+    },
+    "landing-report": {
+      "source": "gstack"
+    },
+    "learn": {
+      "source": "skill_share"
+    },
+    "learnings-researcher": {
+      "source": "skill_share"
+    },
+    "lfg": {
+      "source": "skill_share"
+    },
+    "loop-me": {
+      "source": "skill_share"
+    },
+    "maintainability-reviewer": {
+      "source": "anthropic"
+    },
+    "make-pdf": {
+      "source": "gstack"
+    },
+    "migrate-to-shoehorn": {
+      "source": "mattpocock"
+    },
+    "obsidian-vault": {
+      "source": "skill_share"
+    },
+    "office-hours": {
+      "source": "gstack"
+    },
+    "onboarding": {
+      "source": "skill_share"
+    },
+    "open-gstack-browser": {
+      "source": "gstack"
+    },
+    "pair-agent": {
+      "source": "gstack"
+    },
+    "pattern-recognition-specialist": {
+      "source": "skill_share"
+    },
+    "performance-oracle": {
+      "source": "anthropic"
+    },
+    "performance-reviewer": {
+      "source": "anthropic"
+    },
+    "plan-ceo-review": {
+      "source": "gstack"
+    },
+    "plan-design-review": {
+      "source": "gstack"
+    },
+    "plan-devex-review": {
+      "source": "gstack"
+    },
+    "plan-eng-review": {
+      "source": "gstack"
+    },
+    "plan-tune": {
+      "source": "gstack"
+    },
+    "planning-with-files": {
+      "source": "mattpocock"
+    },
+    "pr-comment-resolver": {
+      "source": "skill_share"
+    },
+    "prd-development": {
+      "source": "skill_share"
+    },
+    "previous-comments-reviewer": {
+      "source": "anthropic"
+    },
+    "product-lens-reviewer": {
+      "source": "anthropic"
+    },
+    "project-standards-reviewer": {
+      "source": "anthropic"
+    },
+    "proof": {
+      "source": "skill_share"
+    },
+    "prototype": {
+      "source": "skill_share"
+    },
+    "pua": {
+      "source": "skill_share"
+    },
+    "qa": {
+      "source": "skill_share"
+    },
+    "qa-only": {
+      "source": "gstack"
+    },
+    "reliability-reviewer": {
+      "source": "anthropic"
+    },
+    "repo-research-analyst": {
+      "source": "skill_share"
+    },
+    "report-bug-ce": {
+      "source": "skill_share"
+    },
+    "request-refactor-plan": {
+      "source": "skill_share"
+    },
+    "research": {
+      "source": "skill_share"
+    },
+    "resolve-pr-feedback": {
+      "source": "skill_share"
+    },
+    "resolving-merge-conflicts": {
+      "source": "skill_share"
+    },
+    "retro": {
+      "source": "gstack"
+    },
+    "review": {
+      "source": "gstack"
+    },
+    "scaffold-exercises": {
+      "source": "mattpocock"
+    },
+    "schema-drift-detector": {
+      "source": "skill_share"
+    },
+    "scope-guardian-reviewer": {
+      "source": "anthropic"
+    },
+    "scrape": {
+      "source": "gstack"
+    },
+    "security-lens-reviewer": {
+      "source": "anthropic"
+    },
+    "security-reviewer": {
+      "source": "anthropic"
+    },
+    "security-sentinel": {
+      "source": "anthropic"
+    },
+    "session-historian": {
+      "source": "skill_share"
+    },
+    "setup-browser-cookies": {
+      "source": "gstack"
+    },
+    "setup-deploy": {
+      "source": "gstack"
+    },
+    "setup-gbrain": {
+      "source": "skill_share"
+    },
+    "setup-matt-pocock-skills": {
+      "source": "mattpocock"
+    },
+    "setup-pre-commit": {
+      "source": "skill_share"
+    },
+    "setup-ts-deep-modules": {
+      "source": "mattpocock"
+    },
+    "ship": {
+      "source": "gstack"
+    },
+    "skillify": {
+      "source": "gstack"
+    },
+    "slack-researcher": {
+      "source": "skill_share"
+    },
+    "spec": {
+      "source": "gstack"
+    },
+    "spec-flow-analyzer": {
+      "source": "skill_share"
+    },
+    "ssh-tunnel__skillhub": {
+      "source": "skill_share"
+    },
+    "sync-gbrain": {
+      "source": "skill_share"
+    },
+    "tdd": {
+      "source": "mattpocock"
+    },
+    "teach": {
+      "source": "mattpocock"
+    },
+    "test-browser": {
+      "source": "skill_share"
+    },
+    "test-xcode": {
+      "source": "skill_share"
+    },
+    "testing-reviewer": {
+      "source": "anthropic"
+    },
+    "to-issues": {
+      "source": "mattpocock"
+    },
+    "to-prd": {
+      "source": "mattpocock"
+    },
+    "to-spec": {
+      "source": "mattpocock"
+    },
+    "to-tickets": {
+      "source": "mattpocock"
+    },
+    "todo-create": {
+      "source": "skill_share"
+    },
+    "todo-resolve": {
+      "source": "skill_share"
+    },
+    "todo-triage": {
+      "source": "skill_share"
+    },
+    "triage": {
+      "source": "skill_share"
+    },
+    "ubiquitous-language": {
+      "source": "mattpocock"
+    },
+    "ui-styling": {
+      "source": "skill_share"
+    },
+    "ui-ux-pro-max": {
+      "source": "skill_share"
+    },
+    "unfreeze": {
+      "source": "gstack"
+    },
+    "wayfinder": {
+      "source": "skill_share"
+    },
+    "wizard": {
+      "source": "mattpocock"
+    },
+    "write-a-skill": {
+      "source": "skill_share"
+    },
+    "writing-beats": {
+      "source": "mattpocock"
+    },
+    "writing-fragments": {
+      "source": "mattpocock"
+    },
+    "writing-great-skills": {
+      "source": "mattpocock"
+    },
+    "writing-shape": {
+      "source": "mattpocock"
+    },
+    "yao-service": {
+      "source": "custom",
+      "protected": true
+    },
+    "zoom-out": {
+      "source": "skill_share"
+    }
+  }
+}

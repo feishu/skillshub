@@ -2,3 +2,4 @@
 .skills-hub-update.lock
 *.log
 .tmp*
+.cache
