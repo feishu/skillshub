@@ -1,0 +1,12 @@
+岗位：前端工程师 / 前端+Node.js
+
+岗位职责：
+- 负责公司核心平台前端业务功能开发与交付
+- 负责性能优化、稳定性治理与线上问题排查
+- 与产品/后端/测试协作推进项目按期上线
+
+任职要求：
+- 熟练掌握 JavaScript/TypeScript，熟悉 Vue 或 React
+- 具备 Node.js 开发经验（加分项：Egg.js/NestJS）
+- 熟悉 HTTP/HTTPS、WebSocket 等网络协议
+- 具备工程化能力（Git、CI/CD、监控、日志）

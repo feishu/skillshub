@@ -1,0 +1,18 @@
+{
+  "slug": "ssh-tunnel",
+  "name": "SSH Tunnel",
+  "version": "1.0.0",
+  "installedAt": 1788426060671,
+  "source": "skillhub",
+  "namespace": "clawhub_gitgoodordietrying",
+  "canonicalName": "@clawhub_gitgoodordietrying/ssh-tunnel",
+  "iconSource": "https://cloudcache.tencent-cloud.com/qcloud/ui/static/other_external_resource/e9a58ede-ead5-43fd-9523-d1ba7f1b78cd.png",
+  "labels": {
+    "requires_api_key": "false"
+  },
+  "description_zh": "SSH隧道、端口转发和远程访问模式。适用于本地/远程/动态端口转发、跳板主机配置、SSH密钥管理、连接多路复用、scp/rsync文件传输以及SSH连接调试。",
+  "description_en": "SSH tunneling, port forwarding, and remote access patterns. Use when setting up local/remote/dynamic port forwards, configuring jump hosts, managing SSH keys, multiplexing connections, transferring files with scp/rsync, or debugging SSH connection issues.",
+  "installs": 5615,
+  "iconLocalPath": "/Users/L/.workbuddy/skills/ssh-tunnel__skillhub/_icon.png",
+  "iconDownloadedFrom": "https://cloudcache.tencent-cloud.com/qcloud/ui/static/other_external_resource/e9a58ede-ead5-43fd-9523-d1ba7f1b78cd.png"
+}

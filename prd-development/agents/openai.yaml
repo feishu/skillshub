@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD Development"
+  short_description: "Build structured PRDs for product initiatives"
+  default_prompt: "Use $prd-development to turn my notes into an engineering-ready PRD."
