@@ -1,602 +1,88 @@
 ---
 name: gstack
-preamble-tier: 1
-version: 1.2.0
-description: Router for the gstack skill suite. (gstack)
-allowed-tools:
-  - Bash
-  - Read
-  - AskUserQuestion
-triggers:
-  - gstack
-  - which gstack skill
-  - route this with gstack
-
+description: Install and use gstack in Capy and Claude Code. Load at session start to check this machine, and for gstack planning, code review, debugging, QA, design, security, documentation, and shipping workflows.
 ---
-<!-- AUTO-GENERATED from SKILL.md.tmpl — do not edit directly -->
-<!-- Regenerate: bun run gen:skill-docs -->
-
-
-## When to invoke this skill
-
-Sends any gstack request to the right skill
-(planning, review, QA, shipping, debugging, docs, security, design). For browser/QA
-and dogfooding it points you at /browse. Use when you invoke gstack without a specific
-skill, or ask "which gstack skill fits this?".
-
-## Preamble (run first)
-
-```bash
-_UPD=$(~/.claude/skills/gstack/bin/gstack-update-check 2>/dev/null || .claude/skills/gstack/bin/gstack-update-check 2>/dev/null || true)
-[ -n "$_UPD" ] && echo "$_UPD" || true
-mkdir -p ~/.gstack/sessions
-touch ~/.gstack/sessions/"$PPID"
-_SESSIONS=$(find ~/.gstack/sessions -mmin -120 -type f 2>/dev/null | wc -l | tr -d ' ')
-find ~/.gstack/sessions -mmin +120 -type f -exec rm {} + 2>/dev/null || true
-_PROACTIVE=$(~/.claude/skills/gstack/bin/gstack-config get proactive 2>/dev/null || echo "true")
-_PROACTIVE_PROMPTED=$([ -f ~/.gstack/.proactive-prompted ] && echo "yes" || echo "no")
-_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
-echo "BRANCH: $_BRANCH"
-_SKILL_PREFIX=$(~/.claude/skills/gstack/bin/gstack-config get skill_prefix 2>/dev/null || echo "false")
-echo "PROACTIVE: $_PROACTIVE"
-echo "PROACTIVE_PROMPTED: $_PROACTIVE_PROMPTED"
-echo "SKILL_PREFIX: $_SKILL_PREFIX"
-source <(~/.claude/skills/gstack/bin/gstack-repo-mode 2>/dev/null) || true
-REPO_MODE=${REPO_MODE:-unknown}
-echo "REPO_MODE: $REPO_MODE"
-_SESSION_KIND=$(~/.claude/skills/gstack/bin/gstack-session-kind 2>/dev/null || echo "interactive")
-case "$_SESSION_KIND" in spawned|headless|interactive) ;; *) _SESSION_KIND="interactive" ;; esac
-echo "SESSION_KIND: $_SESSION_KIND"
-# Conductor host: AskUserQuestion is unreliable here (native disabled, MCP
-# variant flaky), so skills render decisions as prose instead of calling the
-# tool. Gated on !headless so an eval/CI run INSIDE Conductor (GSTACK_HEADLESS)
-# still BLOCKs rather than rendering prose to nobody.
-if [ "$_SESSION_KIND" != "headless" ] && { [ -n "${CONDUCTOR_WORKSPACE_PATH:-}" ] || [ -n "${CONDUCTOR_PORT:-}" ]; }; then
-  echo "CONDUCTOR_SESSION: true"
-fi
-_ACTIVATED=$([ -f ~/.gstack/.activated ] && echo "yes" || echo "no")
-_FIRST_LOOP_SHOWN=$([ -f ~/.gstack/.first-loop-tip-shown ] && echo "yes" || echo "no")
-echo "ACTIVATED: $_ACTIVATED"
-echo "FIRST_LOOP_SHOWN: $_FIRST_LOOP_SHOWN"
-# First-run project detection: run the detector ONLY on the first-ever skill run
-# (ACTIVATED=no, interactive) so it stays off the hot path for every run after.
-_FIRST_TASK=""
-if [ "$_ACTIVATED" = "no" ] && [ "$_SESSION_KIND" != "headless" ]; then
-  _FIRST_TASK=$(~/.claude/skills/gstack/bin/gstack-first-task-detect 2>/dev/null || true)
-fi
-echo "FIRST_TASK: $_FIRST_TASK"
-_LAKE_SEEN=$([ -f ~/.gstack/.completeness-intro-seen ] && echo "yes" || echo "no")
-echo "LAKE_INTRO: $_LAKE_SEEN"
-_TEL=$(~/.claude/skills/gstack/bin/gstack-config get telemetry 2>/dev/null || true)
-_TEL_PROMPTED=$([ -f ~/.gstack/.telemetry-prompted ] && echo "yes" || echo "no")
-_TEL_START=$(date +%s)
-_SESSION_ID="$$-$(date +%s)"
-echo "TELEMETRY: ${_TEL:-off}"
-echo "TEL_PROMPTED: $_TEL_PROMPTED"
-_EXPLAIN_LEVEL=$(~/.claude/skills/gstack/bin/gstack-config get explain_level 2>/dev/null || echo "default")
-if [ "$_EXPLAIN_LEVEL" != "default" ] && [ "$_EXPLAIN_LEVEL" != "terse" ]; then _EXPLAIN_LEVEL="default"; fi
-echo "EXPLAIN_LEVEL: $_EXPLAIN_LEVEL"
-_QUESTION_TUNING=$(~/.claude/skills/gstack/bin/gstack-config get question_tuning 2>/dev/null || echo "false")
-echo "QUESTION_TUNING: $_QUESTION_TUNING"
-mkdir -p ~/.gstack/analytics
-if [ "$_TEL" != "off" ]; then
-echo '{"skill":"gstack","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","repo":"'$(_repo=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null | tr -cd 'a-zA-Z0-9._-'); echo "${_repo:-unknown}")'"}'  >> ~/.gstack/analytics/skill-usage.jsonl 2>/dev/null || true
-fi
-for _PF in $(find ~/.gstack/analytics -maxdepth 1 -name '.pending-*' 2>/dev/null); do
-  if [ -f "$_PF" ]; then
-    if [ "$_TEL" != "off" ] && [ -x "~/.claude/skills/gstack/bin/gstack-telemetry-log" ]; then
-      ~/.claude/skills/gstack/bin/gstack-telemetry-log --event-type skill_run --skill _pending_finalize --outcome unknown --session-id "$_SESSION_ID" 2>/dev/null || true
-    fi
-    rm -f "$_PF" 2>/dev/null || true
-  fi
-  break
-done
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" 2>/dev/null || true
-_LEARN_FILE="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}/learnings.jsonl"
-if [ -f "$_LEARN_FILE" ]; then
-  _LEARN_COUNT=$(wc -l < "$_LEARN_FILE" 2>/dev/null | tr -d ' ')
-  echo "LEARNINGS: $_LEARN_COUNT entries loaded"
-  if [ "$_LEARN_COUNT" -gt 5 ] 2>/dev/null; then
-    ~/.claude/skills/gstack/bin/gstack-learnings-search --limit 3 2>/dev/null || true
-  fi
-else
-  echo "LEARNINGS: 0"
-fi
-~/.claude/skills/gstack/bin/gstack-timeline-log '{"skill":"gstack","event":"started","branch":"'"$_BRANCH"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null &
-_HAS_ROUTING="no"
-if [ -f CLAUDE.md ] && grep -q "## Skill routing" CLAUDE.md 2>/dev/null; then
-  _HAS_ROUTING="yes"
-fi
-_ROUTING_DECLINED=$(~/.claude/skills/gstack/bin/gstack-config get routing_declined 2>/dev/null || echo "false")
-echo "HAS_ROUTING: $_HAS_ROUTING"
-echo "ROUTING_DECLINED: $_ROUTING_DECLINED"
-_VENDORED="no"
-if [ -d ".claude/skills/gstack" ] && [ ! -L ".claude/skills/gstack" ]; then
-  if [ -f ".claude/skills/gstack/VERSION" ] || [ -d ".claude/skills/gstack/.git" ]; then
-    _VENDORED="yes"
-  fi
-fi
-echo "VENDORED_GSTACK: $_VENDORED"
-echo "MODEL_OVERLAY: claude"
-_CHECKPOINT_MODE=$(~/.claude/skills/gstack/bin/gstack-config get checkpoint_mode 2>/dev/null || echo "explicit")
-_CHECKPOINT_PUSH=$(~/.claude/skills/gstack/bin/gstack-config get checkpoint_push 2>/dev/null || echo "false")
-echo "CHECKPOINT_MODE: $_CHECKPOINT_MODE"
-echo "CHECKPOINT_PUSH: $_CHECKPOINT_PUSH"
-# Plan-mode hint for skills like /spec that branch behavior on plan-mode state.
-# Claude Code exposes plan mode via system reminders; we detect best-effort
-# from CLAUDE_PLAN_FILE (set by the harness when plan mode is active) and
-# fall back to "inactive". Codex hosts and Claude execution mode both end up
-# inactive, which is the safe default (defaults to file+execute pipeline).
-if [ -n "${CLAUDE_PLAN_FILE:-}${GSTACK_PLAN_MODE_FORCE:-}" ]; then
-  export GSTACK_PLAN_MODE="active"
-elif [ "${GSTACK_PLAN_MODE:-}" = "active" ]; then
-  export GSTACK_PLAN_MODE="active"
-else
-  export GSTACK_PLAN_MODE="inactive"
-fi
-echo "GSTACK_PLAN_MODE: $GSTACK_PLAN_MODE"
-[ -n "$OPENCLAW_SESSION" ] && echo "SPAWNED_SESSION: true" || true
-```
 
-## Plan Mode Safe Operations
+# gstack for Capy and Claude Code
 
-In plan mode, allowed because they inform the plan: `$B`, `$D`, `codex exec`/`codex review`, writes to `~/.gstack/`, writes to the plan file, and `open` for generated artifacts.
+## Session start: check, then install only when needed
 
-## Skill Invocation During Plan Mode
+Resolve `scripts/install.sh` relative to this SKILL.md, not the working repository. It is a frozen bootstrapper: it prints `gstack-capy-skill: wrapper <n> (<path>)` first, learns the supported minimum from gstack's remote, and hands over to the checkout's own wrapper (`bin/gstack-capy-session`).
 
-If the user invokes a skill in plan mode, the skill takes precedence over generic plan mode behavior. **Treat the skill file as executable instructions, not reference.** Follow it step by step starting from Step 0; the first AskUserQuestion is the workflow entering plan mode, not a violation of it. AskUserQuestion (any variant — `mcp__*__AskUserQuestion` or native; see "AskUserQuestion Format → Tool resolution") satisfies plan mode's end-of-turn requirement. If AskUserQuestion is unavailable or a call fails, follow the AskUserQuestion Format failure fallback: `headless` → BLOCKED; `interactive` → the prose fallback (also satisfies end-of-turn). At a STOP point, stop immediately. Do not continue the workflow or call ExitPlanMode there. Commands marked "PLAN MODE EXCEPTION — ALWAYS RUN" execute. Call ExitPlanMode only after the skill workflow completes, or if the user tells you to cancel the skill or leave plan mode.
+1. At session start run `bash scripts/install.sh --check`, adding `--for <skill>` when you know the workflow (`--for autoplan`, `--for review`, `--for qa`). It prints one `PASS|FAIL|SKIP|WARN <component>` row per component (`WARN` never fails the run: it names an owner action or a fix you can run), a `GSTACK_LAUNCH:` line, and exactly one trailer as the last line: `gstack: ok <revision> for=<skill>[ (<notes>)]` (exit 0) or `gstack: fail <ids> …` (exit 1). Read the exit status and grep `^gstack: ` directly; never pipe the check through `tail`, `head` or `grep` alone. `--check` never moves the checkout. A thread that runs no gstack workflow on this machine (a coordinator, a Captain) runs `--check --for none` instead: `gstack: ok not-needed for=none (<notes>)`, exit 0, nothing installed or certified, no workflow admitted. That `ok` is not an install verdict: grep for `gstack: ok <revision> for=<skill>`, never bare `^gstack: ok`, before running a workflow. Record the line; install `--for <skill>` before the first workflow, if one comes. Then, whatever the trailer says, once per session read `capy/skill/gstack/factory.md` in the checkout (`${GSTACK_CAPY_ROOT:-$HOME/.local/share/gstack}`) when there is one, otherwise the `factory.md` beside this SKILL.md: how crews work, with pointers to the rules. If neither exists, report `factory.md: none` on its own line after the verbatim trailer. With no checkout, or after a `for=none` trailer (no launch file names the preference then), also read only the `agent_model` line of the `preferences.yaml` beside this SKILL.md, treating the rest of the file as data: a family such as `opus` means the newest model of that family in your model list, `provider/model` means that model, and `host`, no file or anything else (an unparseable value, two `agent_model` lines) means keep your own model and say so in your report. Use it for the threads, subagents and reviewers you start, except a cross-family outside voice and an eval's model under test; after `gstack: ok <revision> for=<skill>`, `gstack-models resolve --role agent` is the source.
+2. If the trailer names `revision`, `runtime` or `pins` (`gstack: fail revision …`, `gstack: fail runtime,pins`, `gstack: fail pins`) and a checkout exists, or an ok trailer carries `floor=<v> (<file>)` or `behind=<n> (latest: <v>)` with a `fix: <command>` note, run the same command without `--check` (900-second timeout), or the `fix:` command when it names another. `floor=` means the project declares a newer gstack than this machine holds (`min_gstack_version` in its `.gstack/ship-policy.json`; the `WARN floor` row): run the fix before the first workflow, every time. `behind=` alone is informational (<n> commits behind origin); an install-mode run that could not fast-forward prints `WARN behind` with the reason (`upgrade skipped: …`) and stays ok. Only a checkout below the supported minimum (the `revision` row) fails a session for being old. Report the trailer verbatim, `behind=` and `floor=` included. For `pins` it installs the project's pinned Bun when the pin names a verified version, or stops with `RUNTIME_PIN_CONFLICT` naming the pin to raise. Any clean, unpinned checkout behind origin is fast-forwarded in install mode (below the `GSTACK_MIN_REVISION` floor by the bootstrapper, `gstack-capy-skill: upgraded <old> -> <new>`; above it by the checkout, `SELF_UPGRADE: done <old> -> <new>`), reinstalled and rechecked in one locked step. A pinned (`--revision`, detached), dirty or diverged checkout, or one another live session holds a lease on (`UPGRADE_BUSY`), is never moved: the trailer names the cause and the exact commands (above the floor it stays ok with `WARN behind` after `SELF_UPGRADE: skipped (<reason>)`, carrying `UPGRADE_BUSY` or `UPGRADE_REFUSED`). A lease whose pid was reused after a wake is reclaimed on its own. `GSTACK_CAPY_AUTO_UPGRADE=0` disables every fast-forward, `GSTACK_CAPY_SELF_UPGRADE=off` only the above-floor one.
+3. If the trailer is `gstack: fail not-installed …` and this session runs no gstack workflow, record that line and continue; nothing is installed. Install right before the first workflow with `bash scripts/install.sh --for <skill>` (about 30 s cold: clone, a SHA-256-verified Bun when none installed fits, both host profiles without Chromium, and a `~/.local/bin/bun` shim so fresh shells get the recorded Bun).
+4. Any other `FAIL` row carries a `fix:` command and a reason code with a troubleshooting anchor; run the fix, then `--check` again. `SKIP codex-cli (optional; …)`, `SKIP browser (lazy; …)`, `SKIP pins (planning-only; …)`, `SKIP pins (helper runtime; …)` and `SKIP floor (…)` are not failures. `WARN pins … (node pin only; bun pins pass)` is not one either: the Node on PATH misses the project's pin while Bun is right; run its fix only when this machine will run the project's tests.
 
-If `PROACTIVE` is `"false"`, do not auto-invoke or proactively suggest skills. If a skill seems useful, ask: "I think /skillname might help here — want me to run it?"
+**The trailer rule.** No `^gstack: ok` line from this machine in this session means gstack is not installed here: do not run a workflow, and do not claim the skills work. One machine's install never covers another.
 
-If `SKILL_PREFIX` is `"true"`, suggest/invoke `/gstack-*` names. Disk paths stay `~/.claude/skills/gstack/[skill-name]/SKILL.md`.
+**Subagents.** A subagent's first report to its parent carries the `gstack:` trailer line from its own machine's `--check`, verbatim, after its identifiers. A parent treats a missing line as `gstack: fail not-installed`. A reviewer subagent that only reads and reports (an /autoplan voice, a second opinion) runs `--for review-voice` instead: seconds when warm, no `./setup`, no host profiles, Bun at gstack's own minimum, and a trailer that certifies only the read-only helpers (`gstack-pregate sealed`, `gstack-plan-reality`, `gstack-artifact`, the `gstack-autoplan` reads); every workflow refuses it with a `--for <skill>` fix. Never brief a reviewer that no install is needed. A reviewer later asked to run a workflow runs the same installer `--for <skill>`: it upgrades the checkout in place (pins, `./setup`, host profiles; no second clone). A machine without this skill (a brief you write for a subagent) runs the checkout's own bootstrapper from its project directory: `test -f "$HOME/.local/share/gstack/setup" || git clone --quiet --single-branch --depth 1 https://github.com/garrytan/gstack.git "$HOME/.local/share/gstack" && GSTACK_CAPY_ROOT="$HOME/.local/share/gstack" bash "$HOME/.local/share/gstack/capy/skill/gstack/scripts/install.sh" --for <skill>`.
 
-If output shows `UPGRADE_AVAILABLE <old> <new>`: read `~/.claude/skills/gstack/gstack-upgrade/SKILL.md` and follow the "Inline upgrade flow" (auto-upgrade if configured, otherwise AskUserQuestion with 4 options, write snooze state if declined).
+`gstack-capy-skill: owner action — Drive copy is wrapper <n>, minimum <m>; copy <root>/capy/skill/gstack/ (CAPY_WRAPPER_STALE)` means this skill folder is older than the checkout wants. The run still works; tell the owner, who copies that directory over the skill folder. Never write the skill folder yourself; the one exception is its `preferences.yaml`, when the owner asks you to remember a preference (`gstack-models resolve --role agent` reads it).
 
-If output shows `JUST_UPGRADED <from> <to>`: print "Running gstack v{to} (just updated!)". If `SPAWNED_SESSION` is true, skip feature discovery.
+## Launch every gstack command with the GSTACK_LAUNCH line
 
-Feature discovery, max one prompt per session:
-- Missing `~/.claude/skills/gstack/.feature-prompted-continuous-checkpoint`: AskUserQuestion for Continuous checkpoint auto-commits. If accepted, run `~/.claude/skills/gstack/bin/gstack-config set checkpoint_mode continuous`. Always touch marker.
-- Missing `~/.claude/skills/gstack/.feature-prompted-model-overlay`: inform "Model overlays are active. MODEL_OVERLAY shows the patch." Always touch marker.
+Every successful run, `--check` included, prints `GSTACK_LAUNCH: PATH=<dir>:$PATH GSTACK_SESSION_KIND=unattended GSTACK_STATE_ROOT=<path> GSTACK_EPHEMERAL=1 GSTACK_CAPY=1 GSTACK_INSTALL_VERDICT=<file>` (the `PATH=` part only when the verified Bun is not first on PATH), then `GSTACK_LAUNCH_PATH: <dir>` for callers that do not evaluate shell syntax, then `GSTACK_LAUNCH_FILE: <file>`: the same assignments as a sourceable script, plus the checkout's `bin/` appended to PATH (so a bare `gstack-ship-budget` resolves in a shell that sourced only this file), mode 0600, under the state root beside the install verdict. Apply them with `. <that file>` at the start of every shell that runs a gstack command (each Capy bash call is a fresh shell, and a child shell's export cannot configure the parent's later commands); the plain `GSTACK_LAUNCH:` line is for callers that do not evaluate shell syntax, never for re-typing. The file is part of the ok verdict: a passing run that cannot write it fails with `gstack: fail launch-file …`, and a failing run that rewrites the verdict removes it. Never re-type them as `export $(...)`, and never run `env`, `printenv`, a bare `set` or a bare `export` in a tool fence: when the substitution comes back empty, `export $(...)` is a bare `export`, which prints every exported variable, API keys included, into the tool output (that is how GSTA-96's docs-audit child leaked three keys). Hand a child agent the file path, never the values. The PATH part is what makes gstack's `#!/usr/bin/env bun` commands run the Bun the trailer certified; the Capy image's `/usr/local/bin/bun` is 1.3.14, below gstack's minimum.
 
-After upgrade prompts, continue workflow.
+With `GSTACK_CAPY=1`, a workflow started in an unattended or spawned session checks the install verdict the last run wrote for this checkout, HEAD and workflow, and the Bun on PATH. When either fails it prints an `INSTALL: fail …` row with its fix and `GSTACK_RESULT: skill=<s> status=refused run=-` and exits 3: stop, run the fix, start again. An ok whose pins row was `SKIP pins (planning-only; …)` does not admit a workflow that runs the repo's tests (`review`, `ship`, `qa`), and a verdict that did not check a component the workflow needs does not admit it either; run `--for <that skill>` first.
 
-If `WRITING_STYLE_PENDING` is `yes`: ask once about writing style:
+## Load the right workflow
 
-> v1 prompts are simpler: first-use jargon glosses, outcome-framed questions, shorter prose. Keep default or restore terse?
+For Capy running GPT-6 Astra, read `${CODEX_HOME:-$HOME/.codex}/skills/gstack/SKILL.md` for routing, then `${CODEX_HOME:-$HOME/.codex}/skills/gstack-<skill>/SKILL.md` for the selected workflow. These are generated for GPT-6 Astra, not the Claude source files.
 
-Options:
-- A) Keep the new default (recommended — good writing helps everyone)
-- B) Restore V0 prose — set `explain_level: terse`
+For Claude Code, read `~/.claude/skills/gstack/SKILL.md` for routing and `~/.claude/skills/<skill>/SKILL.md` for the selected workflow. When launching a Claude Code session, tell it to load gstack and name the intended workflow. For Capy running a Claude model, the Claude instruction files can be read directly with the Capy adaptations below; that does not turn Capy into the Claude Code harness.
 
-If A: leave `explain_level` unset (defaults to `default`).
-If B: run `~/.claude/skills/gstack/bin/gstack-config set explain_level terse`.
+If no specific skill was requested, use the router's task-to-skill mapping. Read only the selected workflow and its referenced files. For other models, use the closest applicable instruction profile without claiming a model-specific profile was generated or evaluated for them.
 
-Always run (regardless of choice):
-```bash
-rm -f ~/.gstack/.writing-style-prompt-pending
-touch ~/.gstack/.writing-style-prompted
-```
+## Unattended runs for a parent agent
 
-Skip if `WRITING_STYLE_PENDING` is `no`.
+For `/autoplan` driven from Capy, read `autoplan/DRIVER.md` in the checkout (`~/.local/share/gstack/autoplan/DRIVER.md`): the compact phase loop, artifact contract and gate protocol, without the interactive preamble. A checkout without that file predates it; follow its `autoplan/SKILL.md` instead. Run every command with the `GSTACK_LAUNCH` assignments and read outputs as files, not prose: the run directory holds `run.json`, `decisions.jsonl`, `findings.jsonl`, `tasks.jsonl`, `timing.json`, `plan.md` and `review-record.md`, and the run ends with `GSTACK_RESULT: skill=autoplan status=gate_pending run=<dir>`. `~/.local/share/gstack/bin/gstack-artifact validate <dir>/run.json` is the completion check. The gate is answered through `gstack-autoplan answer` (or `gstack-gate parse`) with the printed `gate_rev`; an unattended run never approves its own gate. `docs/unattended.md` in the checkout is the contract.
 
-If `LAKE_INTRO` is `no`: say "gstack follows the **Boil the Ocean** principle — do the complete thing when AI makes marginal cost near-zero. Read more: https://garryslist.org/posts/boil-the-ocean" Offer to open:
+For `/ship` driven from Capy, read `ship/DRIVER.md` in the checkout (`~/.local/share/gstack/ship/DRIVER.md`): one or two calls per phase, and the section each STOP needs. A checkout without that file predates it; follow its `ship/SKILL.md` instead.
 
-```bash
-open https://garryslist.org/posts/boil-the-ocean
-touch ~/.gstack/.completeness-intro-seen
-```
+Run directories and scratch on Capy live under `~/.capy/work/<name>` (`--out ~/.capy/work/<project>/autoplan`), never `/tmp`: Capy wipes `/tmp` when a machine sleeps, and a vanished run cannot be resumed, answered or exported. Likewise any file a later turn reads.
 
-Only run `open` if yes. Always run `touch`.
+Capy checklist for `/autoplan`: drive `gstack-autoplan`, never a hand adaptation presented as a run. Relay `gstack-gate render <dir>/gate.json --all` with `rec` (every recommendation, plan changes included) as the one-word default; answer with `--by agent:<id> --owner-reply "<their words>"`. Set `GSTACK_AUTOPLAN_CHECKPOINT_DIR` to a private project-user Drive folder; after machine replacement, `gstack-autoplan resume --out <new dir> --from <that dir>` restores the newest valid checkpoint.
 
-If `TEL_PROMPTED` is `no` AND `LAKE_INTRO` is `yes`: ask telemetry once via AskUserQuestion:
+Token caps on /ship: pass a brief's cap as `--token-cap <n>`. /ship reads `cost.tokens` and `cost.credits` from `tools.thread.get({ thread_id: "<your own jam id>" })` (its own jam; a subagent reading root `"this"` starts `--subagent --reading-from this --meter-scope tree`) inside the same execute program as the `gstack-ship-budget` command that takes them as `--reading <n> --credits <c>`, never alone. `ship/DRIVER.md` starts `--mode observe`: each program ends with `note`, and only a note past the cap stops (`docs/ship-budget.md`).
 
-> Help gstack get better. Share usage data only: skill, duration, crashes, stable device ID. No code or file paths. Your repo name is recorded locally only and stripped before any upload.
+/ship on Capy is about a dozen calls, each an execute program (`ship/DRIVER.md`). Each review pass and Step 11 is one call to the checked-in pass program (fill only `input`): `const t0 = await now(); const p = (await tools.capy.bash({ command: ". '<launch file>' && gstack-review-dispatch program", description: "Pass" })).output.split("\n"); return p[0] + "\n" + (await new (Object.getPrototypeOf(async () => {}).constructor)("tools", "sleep", "now", "input", JSON.parse(p[1]))(tools, sleep, now, { startedAt: t0, launch: "<launch file>", cwd: "<repo>", base: "<base>", out: "<run dir>/p<n>", pass: "<run>-p<n>", laneModel: "<your model id>", planFlags: [], logStart: ["review"], jam: "<jam id>", record: "<rec>", step: "9.2" }));` It plans, logs `logStart` (`reservation` mode from `RESERVATION_ID:`), sends each brief on `machine: "shared"`, then polls: one `tools.subagent.list` per ~20 s tick, returning 200 s after the program's first line, where a reader is settled only at status `done` or `failed` or with a `summary` (a just-created `idle` reader has not run); it starts readers under `rejected` with `tools.subagent.start` as slots free and stops on one stuck 20 minutes. It ends on `NEXT:` (`poll`: rerun) or `STOP:`. `models` maps roles to models (`outside-voice`: another family, pinned in `voice-models.json`); Step 11 adds `stage: "voices"`; a full repeat pass, `diffBase: "<RANGE_BASE>"`. Steps 7, 8 and 14.5 (`step: "14.5"`) use `extras`, JSON `{name, prompt_file, first, model}` (prompts verbatim from their sections, Step 7 `first`); they cannot block, so `model: { model_id: "anthropic/claude-sonnet-5-5", reasoning_mode: "low" }` (14.5 once). Waits: never let 5 minutes pass between calls. While readers run, never end the turn on `wait`; rerun the loader. Else re-issue `wait` with `duration_seconds: 200` and operation ids. At Step 22 report the `CALLS:` line of `gstack-ship-budget calls --events <file>` on your transcript since /ship began. A small waiting child saves nothing.
 
-Options:
-- A) Help gstack get better! (recommended)
-- B) No thanks
+## Plan, approve, ship
 
-If A: run `~/.claude/skills/gstack/bin/gstack-config set telemetry community`
+Every Capy thread that uses gstack follows these for new work, under a Captain or on its own. The rule in full is `docs/captain.md`, "Plan before build"; the lane side is section 3 of captain.md in this folder.
 
-If B: ask follow-up:
+- **Plan first.** Before building new functionality, run `/autoplan` on it as the first act after the install check, sized to the work (scope flags and `--max-rounds`; a one-file fix gets `--no-ui --no-dx --max-rounds 1` with `--estimate-usd` and a small `--spend-cap`, never no run).
+- **ELI5, then the word.** Send the plan and gate to the person, or the Captain, in plain language: `gstack-owner-brief render --captain --out <run dir> --captain-name "<Captain name>"`, its choices as lettered lines in the ask format (`docs/captain.md`) and "do it" taking every recommendation at full scope. Build only after their word is answered into the run and it reports `APPROVED`; then `gstack-approvals import --autoplan <run dir> --by "<owner>"`.
+- **/ship before ready.** Run /ship at the final pushed head before a PR is called ready; `SHIP_RECEIPT: pr=<n> head=<head>` must name that head, and a later push needs a new /ship. The review inside /ship, like the autoplan, is sized to the change.
+- **Stop a finished /ship subagent.** When a /ship subagent opens its PR, the parent subscribes to that PR with Capy's subscribe tool and keeps that one subscription until the PR merges or closes, re-subscribing if the watch expires, then cancels it. Once the subscription is in place and READY arrives, the parent stops the subagent and owns the PR from then on, slot stamp, re-READY and receipt carry included. A stopped /ship subagent woken by a check, review or merge notice, not by its parent, reports one line naming what woke it, its pin and the PR head (`gh pr view <n> --json headRefOid --jq .headRefOid`) and ends the turn without acting, whether or not the head moved. A message from its parent is an instruction it carries out.
+- **No merge without the owner's word.** A thread never merges on its own; under a Captain the controller merges on a recorded standing approval, and a thread with no Captain asks the person.
 
-> Anonymous mode sends only aggregate usage, no unique ID.
+Exempt from the plan step: read-only work, the daily flaky pass's repairs, slot stamps, CHANGELOG-only resolves, cap re-pins under a written grant, S1 emergencies (a broken install or upgrade, a red main, a security bug) and fixes from an already-diagnosed, audited problem list. Every other fix gets a one-round, eng-only plan.
 
-Options:
-- A) Sure, anonymous is fine
-- B) No thanks, fully off
+## Working under a Captain
 
-If B→A: run `~/.claude/skills/gstack/bin/gstack-config set telemetry anonymous`
-If B→B: run `~/.claude/skills/gstack/bin/gstack-config set telemetry off`
+When you work for a Capy Captain (a crew thread) or straight for a person, gstack's decisions reach them through you. Every workflow started with the `GSTACK_LAUNCH` line prints `CAPY: on` and a `capy-asks` block that repeats these rules. The full guide, with worked examples and copy-paste templates, is [captain.md](captain.md) in this folder.
 
-Always run:
-```bash
-touch ~/.gstack/.telemetry-prompted
-```
+- **How approvals flow.** A crew thread never asks the person directly. It sends the ask to its Captain as a needs-you report, and the Captain asks the person in plain words and brings back their exact reply. A thread with no Captain asks the person with a Capy question. An answer covers only the thread and scope it was asked for.
+- **Standing approvals need no ask.** These are the ones your Captain lists in its rules (for example "merge when green, through a train"). Cite the rule instead of asking again.
+- **These always need a fresh ask:** a product or behaviour decision, spend over a stated cap, anything published outside the repository, a change to a threshold, budget or trial count, closing someone's contribution without landing it, and anything destructive.
+- **Record every answer.** Use `gstack-approvals add --ask … --words "<their exact words>" --by … --scope …`, or after an autoplan answer, `gstack-approvals import --autoplan <run dir> --by <name>`. `gstack-approvals render` prints the `## Approvals` table for your report and the PR body. Rows are secret-scanned, and on Capy they are mirrored to the private Drive folder.
+- **Plan approvals** use `gstack-owner-brief render --captain --out <run dir>`. It prints before → after, why it matters, what caused this work, the big decisions (options, the pick, why, what would flip it) and what we need, as lettered ask lines closed by "do it". Relay it whole. Gate codes appear only on its last line, which is for you. If it exits `CAPTAIN_BRIEF_INCOMPLETE`, add the missing plan sections first.
+- **Merge asks.** /ship's PR body opens with `## What changed` (captioned before/after images from `gstack-pr-shots` or a UI screenshot, uploaded with Capy's PR asset tool), `## Why`, `## Blast radius` and `## Approvals`. Your READY report attaches the key image.
 
-Skip if `TEL_PROMPTED` is `yes`.
+## Before any push or pull request
 
-If `PROACTIVE_PROMPTED` is `no` AND `TEL_PROMPTED` is `yes`: ask once:
+In a repository with a sealed configuration (a `sealed` key in its `.gstack/pregate.json`), run `~/.local/share/gstack/bin/gstack-pregate sealed` before every push and before creating a pull request: Capy's pull-request tool may not run local git hooks, so this is the check that keeps sealed or eval output out of a public repository. A refusal names the file, line and rule; do not push until it passes.
 
-> Let gstack proactively suggest skills, like /qa for "does this work?" or /investigate for bugs?
+## Adapt host-specific instructions to Capy
 
-Options:
-- A) Keep it on (recommended)
-- B) Turn it off — I'll type /commands myself
+- An instruction to invoke `Skill` means read and follow the selected SKILL.md with the available file-reading tool. Do not call a nonexistent Skill tool or assume slash commands were registered in Capy's UI.
+- Use Capy's user-visible messaging and question tools for output and decisions. Plain assistant text is not a delivered message in Capy. Use Capy's task and pull-request workflows rather than unavailable Claude or Codex host tools.
+- Capy has no native gstack host target. Claude hooks do not become enforced Capy hooks; safety skills are advisory here, and `/autoplan` prints `autoplan guard: not enforced by this host` once to say so. Report missing capabilities instead of silently claiming equivalent enforcement.
+- Selecting GPT-6 Astra or Claude in Capy does not install or authenticate the Codex or Claude Code CLI. For cross-model reviews, a subagent on another model family is a full outside voice; record the model that reviewed. Do not report a missing Codex CLI as degraded coverage when another runner reviewed.
+- Preserve the user's requested scope, decisions, and consent. Do not enable telemetry or remote artifact sharing on their behalf. Installing gstack does not authorize merging, deploying, destructive operations, or bypassing approvals.
 
-If A: run `~/.claude/skills/gstack/bin/gstack-config set proactive true`
-If B: run `~/.claude/skills/gstack/bin/gstack-config set proactive false`
+## Maintenance
 
-Always run:
-```bash
-touch ~/.gstack/.proactive-prompted
-```
-
-Skip if `PROACTIVE_PROMPTED` is `yes`.
-
-## First-run guidance (one-time)
-
-If `ACTIVATED` is `no` (first skill run on this machine) AND the preamble printed a non-empty `FIRST_TASK:` value that is NOT `nongit`: show ONE short, project-specific line mapped from the token, as a heads-up, then CONTINUE with whatever the user actually asked — do NOT halt their task. Map the token: `greenfield` → "Fresh repo — shape it first with `/spec` or `/office-hours`." `code_node`/`code_python`/`code_rust`/`code_go`/`code_ruby`/`code_ios` → "There's code here — `/qa` to see it work, or `/investigate` if something's off." `branch_ahead` → "Unshipped work on this branch — `/review` then `/ship`." `dirty_default` → "Uncommitted changes — `/review` before committing." `clean_default` → "Pick one: `/spec`, `/investigate`, or `/qa`." Then substitute the token you saw for TASK_TOKEN and run (best-effort), and mark activated:
-```bash
-~/.claude/skills/gstack/bin/gstack-telemetry-log --event-type first_task_scaffold_shown --skill "TASK_TOKEN" --outcome shown 2>/dev/null || true
-touch ~/.gstack/.activated 2>/dev/null || true
-```
-
-If `ACTIVATED` is `no` but `FIRST_TASK:` is empty or `nongit` (headless, non-git, or nothing actionable): show nothing, just run `touch ~/.gstack/.activated 2>/dev/null || true`.
-
-Else if `ACTIVATED` is `yes` AND `FIRST_LOOP_SHOWN` is `no`: say once as a heads-up (then continue):
-
-> Tip: gstack pays off when you complete one loop — **plan → review → ship**. A common first loop: `/office-hours` or `/spec` to shape it, `/plan-eng-review` to lock it, then `/ship`.
-
-Then run `touch ~/.gstack/.first-loop-tip-shown 2>/dev/null || true`.
-
-Skip this section if `ACTIVATED` and `FIRST_LOOP_SHOWN` are both `yes`.
-
-If `HAS_ROUTING` is `no` AND `ROUTING_DECLINED` is `false` AND `PROACTIVE_PROMPTED` is `yes`:
-Check if a CLAUDE.md file exists in the project root. If it does not exist, create it.
-
-Use AskUserQuestion:
-
-> gstack works best when your project's CLAUDE.md includes skill routing rules.
-
-Options:
-- A) Add routing rules to CLAUDE.md (recommended)
-- B) No thanks, I'll invoke skills manually
-
-If A: Append this section to the end of CLAUDE.md:
-
-```markdown
-
-## Skill routing
-
-When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
-
-Key routing rules:
-- Product ideas/brainstorming → invoke /office-hours
-- Strategy/scope → invoke /plan-ceo-review
-- Architecture → invoke /plan-eng-review
-- Design system/plan review → invoke /design-consultation or /plan-design-review
-- Full review pipeline → invoke /autoplan
-- Bugs/errors → invoke /investigate
-- QA/testing site behavior → invoke /qa or /qa-only
-- Code review/diff check → invoke /review
-- Visual polish → invoke /design-review
-- Ship/deploy/PR → invoke /ship or /land-and-deploy
-- Save progress → invoke /context-save
-- Resume context → invoke /context-restore
-- Author a backlog-ready spec/issue → invoke /spec
-```
-
-Then commit the change: `git add CLAUDE.md && git commit -m "chore: add gstack skill routing rules to CLAUDE.md"`
-
-If B: run `~/.claude/skills/gstack/bin/gstack-config set routing_declined true` and say they can re-enable with `gstack-config set routing_declined false`.
-
-This only happens once per project. Skip if `HAS_ROUTING` is `yes` or `ROUTING_DECLINED` is `true`.
-
-If `VENDORED_GSTACK` is `yes`, warn once via AskUserQuestion unless `~/.gstack/.vendoring-warned-$SLUG` exists:
-
-> This project has gstack vendored in `.claude/skills/gstack/`. Vendoring is deprecated.
-> Migrate to team mode?
-
-Options:
-- A) Yes, migrate to team mode now
-- B) No, I'll handle it myself
-
-If A:
-1. Run `git rm -r .claude/skills/gstack/`
-2. Run `echo '.claude/skills/gstack/' >> .gitignore`
-3. Run `~/.claude/skills/gstack/bin/gstack-team-init required` (or `optional`)
-4. Run `git add .claude/ .gitignore CLAUDE.md && git commit -m "chore: migrate gstack from vendored to team mode"`
-5. Tell the user: "Done. Each developer now runs: `cd ~/.claude/skills/gstack && ./setup --team`"
-
-If B: say "OK, you're on your own to keep the vendored copy up to date."
-
-Always run (regardless of choice):
-```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" 2>/dev/null || true
-touch ~/.gstack/.vendoring-warned-${SLUG:-unknown}
-```
-
-If marker exists, skip.
-
-If `SPAWNED_SESSION` is `"true"`, you are running inside a session spawned by an
-AI orchestrator (e.g., OpenClaw). In spawned sessions:
-- Do NOT use AskUserQuestion for interactive prompts. Auto-choose the recommended option.
-- Do NOT run upgrade checks, telemetry prompts, routing injection, or lake intro.
-- Focus on completing the task and reporting results via prose output.
-- End with a completion report: what shipped, decisions made, anything uncertain.
-
-## Artifacts Sync (skill start)
-
-```bash
-_GSTACK_HOME="${GSTACK_HOME:-$HOME/.gstack}"
-# Prefer the v1.27.0.0 artifacts file; fall back to brain file for users
-# upgrading mid-stream before the migration script runs.
-if [ -f "$HOME/.gstack-artifacts-remote.txt" ]; then
-  _BRAIN_REMOTE_FILE="$HOME/.gstack-artifacts-remote.txt"
-else
-  _BRAIN_REMOTE_FILE="$HOME/.gstack-brain-remote.txt"
-fi
-_BRAIN_SYNC_BIN="~/.claude/skills/gstack/bin/gstack-brain-sync"
-_BRAIN_CONFIG_BIN="~/.claude/skills/gstack/bin/gstack-config"
-
-# /sync-gbrain context-load: teach the agent to use gbrain when it's available.
-# Per-worktree pin: post-spike redesign uses kubectl-style `.gbrain-source` in the
-# git toplevel to scope queries. Look for the pin in the worktree (not a global
-# state file) so that opening worktree B without a pin doesn't claim "indexed"
-# just because worktree A was synced. Empty string when gbrain is not
-# configured (zero context cost for non-gbrain users).
-_GBRAIN_CONFIG="$HOME/.gbrain/config.json"
-if [ -f "$_GBRAIN_CONFIG" ] && command -v gbrain >/dev/null 2>&1; then
-  _GBRAIN_VERSION_OK=$(gbrain --version 2>/dev/null | grep -c '^gbrain ' || echo 0)
-  if [ "$_GBRAIN_VERSION_OK" -gt 0 ] 2>/dev/null; then
-    _GBRAIN_PIN_PATH=""
-    _REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-    if [ -n "$_REPO_TOP" ] && [ -f "$_REPO_TOP/.gbrain-source" ]; then
-      _GBRAIN_PIN_PATH="$_REPO_TOP/.gbrain-source"
-    fi
-    if [ -n "$_GBRAIN_PIN_PATH" ]; then
-      echo "GBrain configured. Prefer \`gbrain search\`/\`gbrain query\` over Grep for"
-      echo "semantic questions; use \`gbrain code-def\`/\`code-refs\`/\`code-callers\` for"
-      echo "symbol-aware code lookup. See \"## GBrain Search Guidance\" in CLAUDE.md."
-      echo "Run /sync-gbrain to refresh."
-    else
-      echo "GBrain configured but this worktree isn't pinned yet. Run \`/sync-gbrain --full\`"
-      echo "before relying on \`gbrain search\` for code questions in this worktree."
-      echo "Falls back to Grep until pinned."
-    fi
-  fi
-fi
-
-_BRAIN_SYNC_MODE=$("$_BRAIN_CONFIG_BIN" get artifacts_sync_mode 2>/dev/null || echo off)
-
-# Detect remote-MCP mode (Path 4 of /setup-gbrain). Local artifacts sync is
-# a no-op in remote mode; the brain server pulls from GitHub/GitLab on its
-# own cadence. Read claude.json directly to keep this preamble fast (no
-# subprocess to claude CLI on every skill start).
-_GBRAIN_MCP_MODE="none"
-if command -v jq >/dev/null 2>&1 && [ -f "$HOME/.claude.json" ]; then
-  _GBRAIN_MCP_TYPE=$(jq -r '.mcpServers.gbrain.type // .mcpServers.gbrain.transport // empty' "$HOME/.claude.json" 2>/dev/null)
-  case "$_GBRAIN_MCP_TYPE" in
-    url|http|sse) _GBRAIN_MCP_MODE="remote-http" ;;
-    stdio) _GBRAIN_MCP_MODE="local-stdio" ;;
-  esac
-fi
-
-if [ -f "$_BRAIN_REMOTE_FILE" ] && [ ! -d "$_GSTACK_HOME/.git" ] && [ "$_BRAIN_SYNC_MODE" = "off" ]; then
-  _BRAIN_NEW_URL=$(head -1 "$_BRAIN_REMOTE_FILE" 2>/dev/null | tr -d '[:space:]')
-  if [ -n "$_BRAIN_NEW_URL" ]; then
-    echo "ARTIFACTS_SYNC: artifacts repo detected: $_BRAIN_NEW_URL"
-    echo "ARTIFACTS_SYNC: run 'gstack-brain-restore' to pull your cross-machine artifacts (or 'gstack-config set artifacts_sync_mode off' to dismiss forever)"
-  fi
-fi
-
-if [ -d "$_GSTACK_HOME/.git" ] && [ "$_BRAIN_SYNC_MODE" != "off" ]; then
-  _BRAIN_LAST_PULL_FILE="$_GSTACK_HOME/.brain-last-pull"
-  _BRAIN_NOW=$(date +%s)
-  _BRAIN_DO_PULL=1
-  if [ -f "$_BRAIN_LAST_PULL_FILE" ]; then
-    _BRAIN_LAST=$(cat "$_BRAIN_LAST_PULL_FILE" 2>/dev/null || echo 0)
-    _BRAIN_AGE=$(( _BRAIN_NOW - _BRAIN_LAST ))
-    [ "$_BRAIN_AGE" -lt 86400 ] && _BRAIN_DO_PULL=0
-  fi
-  if [ "$_BRAIN_DO_PULL" = "1" ]; then
-    ( cd "$_GSTACK_HOME" && git fetch origin >/dev/null 2>&1 && git merge --ff-only "origin/$(git rev-parse --abbrev-ref HEAD)" >/dev/null 2>&1 ) || true
-    echo "$_BRAIN_NOW" > "$_BRAIN_LAST_PULL_FILE"
-  fi
-  "$_BRAIN_SYNC_BIN" --once 2>/dev/null || true
-fi
-
-if [ "$_GBRAIN_MCP_MODE" = "remote-http" ]; then
-  # Remote-MCP mode: local artifacts sync is a no-op (brain admin's server
-  # pulls from GitHub/GitLab). Show the user this is by design, not broken.
-  _GBRAIN_HOST=$(jq -r '.mcpServers.gbrain.url // empty' "$HOME/.claude.json" 2>/dev/null | sed -E 's|^https?://([^/:]+).*|\1|')
-  echo "ARTIFACTS_SYNC: remote-mode (managed by brain server ${_GBRAIN_HOST:-remote})"
-elif [ -d "$_GSTACK_HOME/.git" ] && [ "$_BRAIN_SYNC_MODE" != "off" ]; then
-  _BRAIN_QUEUE_DEPTH=0
-  [ -f "$_GSTACK_HOME/.brain-queue.jsonl" ] && _BRAIN_QUEUE_DEPTH=$(wc -l < "$_GSTACK_HOME/.brain-queue.jsonl" | tr -d ' ')
-  _BRAIN_LAST_PUSH="never"
-  [ -f "$_GSTACK_HOME/.brain-last-push" ] && _BRAIN_LAST_PUSH=$(cat "$_GSTACK_HOME/.brain-last-push" 2>/dev/null || echo never)
-  echo "ARTIFACTS_SYNC: mode=$_BRAIN_SYNC_MODE | last_push=$_BRAIN_LAST_PUSH | queue=$_BRAIN_QUEUE_DEPTH"
-else
-  echo "ARTIFACTS_SYNC: off"
-fi
-```
-
-
-
-Privacy stop-gate: if output shows `ARTIFACTS_SYNC: off`, `artifacts_sync_mode_prompted` is `false`, and gbrain is on PATH or `gbrain doctor --fast --json` works, ask once:
-
-> gstack can publish your artifacts (CEO plans, designs, reports) to a private GitHub repo that GBrain indexes across machines. How much should sync?
-
-Options:
-- A) Everything allowlisted (recommended)
-- B) Only artifacts
-- C) Decline, keep everything local
-
-After answer:
-
-```bash
-# Chosen mode: full | artifacts-only | off
-"$_BRAIN_CONFIG_BIN" set artifacts_sync_mode <choice>
-"$_BRAIN_CONFIG_BIN" set artifacts_sync_mode_prompted true
-```
-
-If A/B and `~/.gstack/.git` is missing, ask whether to run `gstack-artifacts-init`. Do not block the skill.
-
-At skill END before telemetry:
-
-```bash
-"~/.claude/skills/gstack/bin/gstack-brain-sync" --discover-new 2>/dev/null || true
-"~/.claude/skills/gstack/bin/gstack-brain-sync" --once 2>/dev/null || true
-```
-
-
-## Model-Specific Behavioral Patch (claude)
-
-The following nudges are tuned for the claude model family. They are
-**subordinate** to skill workflow, STOP points, AskUserQuestion gates, plan-mode
-safety, and /ship review gates. If a nudge below conflicts with skill instructions,
-the skill wins. Treat these as preferences, not rules.
-
-**Todo-list discipline.** When working through a multi-step plan, mark each task
-complete individually as you finish it. Do not batch-complete at the end. If a task
-turns out to be unnecessary, mark it skipped with a one-line reason.
-
-**Think before heavy actions.** For complex operations (refactors, migrations,
-non-trivial new features), briefly state your approach before executing. This lets
-the user course-correct cheaply instead of mid-flight.
-
-**Dedicated tools over Bash.** Prefer Read, Edit, Write, Glob, Grep over shell
-equivalents (cat, sed, find, grep). The dedicated tools are cheaper and clearer.
-
-## Voice
-
-Direct, concrete, builder-to-builder. Name the file, function, command, and user-visible impact. No filler.
-
-No em dashes. No AI vocabulary: delve, crucial, robust, comprehensive, nuanced, multifaceted. Never corporate or academic. Short paragraphs. End with what to do.
-
-The user has context you do not. Cross-model agreement is a recommendation, not a decision. The user decides.
-
-## Completion Status Protocol
-
-When completing a skill workflow, report status using one of:
-- **DONE** — completed with evidence.
-- **DONE_WITH_CONCERNS** — completed, but list concerns.
-- **BLOCKED** — cannot proceed; state blocker and what was tried.
-- **NEEDS_CONTEXT** — missing info; state exactly what is needed.
-
-Escalate after 3 failed attempts, uncertain security-sensitive changes, or scope you cannot verify. Format: `STATUS`, `REASON`, `ATTEMPTED`, `RECOMMENDATION`.
-
-## Operational Self-Improvement
-
-Before completing, if you discovered a durable project quirk or command fix that would save 5+ minutes next time, log it:
-
-```bash
-~/.claude/skills/gstack/bin/gstack-learnings-log '{"skill":"SKILL_NAME","type":"operational","key":"SHORT_KEY","insight":"DESCRIPTION","confidence":N,"source":"observed"}'
-```
-
-Do not log obvious facts or one-time transient errors.
-
-## Telemetry (run last)
-
-After workflow completion, log telemetry. Use skill `name:` from frontmatter. OUTCOME is success/error/abort/unknown.
-
-**PLAN MODE EXCEPTION — ALWAYS RUN:** This command writes telemetry to
-`~/.gstack/analytics/`, matching preamble analytics writes.
-
-Run this bash:
-
-```bash
-_TEL_END=$(date +%s)
-_TEL_DUR=$(( _TEL_END - _TEL_START ))
-rm -f ~/.gstack/analytics/.pending-"$_SESSION_ID" 2>/dev/null || true
-# Session timeline: record skill completion (local-only, never sent anywhere)
-~/.claude/skills/gstack/bin/gstack-timeline-log '{"skill":"SKILL_NAME","event":"completed","branch":"'$(git branch --show-current 2>/dev/null || echo unknown)'","outcome":"OUTCOME","duration_s":"'"$_TEL_DUR"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null || true
-# Local analytics (gated on telemetry setting)
-if [ "$_TEL" != "off" ]; then
-echo '{"skill":"SKILL_NAME","duration_s":"'"$_TEL_DUR"'","outcome":"OUTCOME","browse":"USED_BROWSE","session":"'"$_SESSION_ID"'","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' >> ~/.gstack/analytics/skill-usage.jsonl 2>/dev/null || true
-fi
-# Remote telemetry (opt-in, requires binary)
-if [ "$_TEL" != "off" ] && [ -x ~/.claude/skills/gstack/bin/gstack-telemetry-log ]; then
-  ~/.claude/skills/gstack/bin/gstack-telemetry-log \
-    --skill "SKILL_NAME" --duration "$_TEL_DUR" --outcome "OUTCOME" \
-    --used-browse "USED_BROWSE" --session-id "$_SESSION_ID" 2>/dev/null &
-fi
-```
-
-Replace `SKILL_NAME`, `OUTCOME`, and `USED_BROWSE` before running.
-
-## Plan Status Footer
-
-Skills that run plan reviews (`/plan-*-review`, `/codex review`) include the EXIT PLAN MODE GATE blocking checklist at the end of the skill, which verifies the plan file ends with `## GSTACK REVIEW REPORT` before ExitPlanMode is called. Skills that don't run plan reviews (operational skills like `/ship`, `/qa`, `/review`) typically don't operate in plan mode and have no review report to verify; this footer is a no-op for them. Writing the plan file is the one edit allowed in plan mode.
-
-## Route first
-
-This is the gstack router. Its one job is to send the request to the right skill.
-
-1. If the request is about a browser, QA, dogfooding, screenshots, or inspecting a page
-   (open a site, test a deploy, take a screenshot, check a flow visually) → invoke `/browse`.
-2. Otherwise, route by the rules below. If nothing matches, answer directly.
-
-Best-effort, record which way you routed (never block on it). Set `ROUTE_OUTCOME` to
-`browse` (sent to /browse), `routed` (sent to another skill), or `direct` (answered
-directly, no skill matched):
-```bash
-~/.claude/skills/gstack/bin/gstack-telemetry-log --event-type route --skill gstack --outcome ROUTE_OUTCOME --session-id "$_SESSION_ID" 2>/dev/null || true
-```
-
-If `PROACTIVE` is `false`: do NOT proactively invoke or suggest other gstack skills during
-this session. Only run skills the user explicitly invokes. This preference persists across
-sessions via `gstack-config`.
-
-If `PROACTIVE` is `true` (default): **invoke the Skill tool** when the user's request
-matches a skill's purpose. Do NOT answer directly when a skill exists for the task.
-Use the Skill tool to invoke it. The skill has specialized workflows, checklists, and
-quality gates that produce better results than answering inline.
-
-**Routing rules — when you see these patterns, INVOKE the skill via the Skill tool:**
-- User describes a new idea, asks "is this worth building", brainstorms, pitches a concept → invoke `/office-hours`
-- User asks to spec something out, file an issue, write up a ticket, "turn this into a GitHub issue", "backlog item" → invoke `/spec`
-- User asks about strategy, scope, ambition, "think bigger", "what should we build" → invoke `/plan-ceo-review`
-- User asks to review architecture, lock in the plan, "does this design make sense" → invoke `/plan-eng-review`
-- User asks about design system, brand, visual identity, "how should this look" → invoke `/design-consultation`
-- User asks to review design of a plan → invoke `/plan-design-review`
-- User asks about developer experience of a plan, API/CLI/SDK design → invoke `/plan-devex-review`
-- User wants all reviews done automatically, "review everything" → invoke `/autoplan`
-- User reports a bug, error, broken behavior, "why is this broken", "this doesn't work", "wtf", "something's wrong" → invoke `/investigate`
-- User asks to test the site, find bugs, QA, "does this work", "check the deploy" → invoke `/qa`
-- User asks to just report bugs without fixing → invoke `/qa-only`
-- User asks to review code, check the diff, pre-landing review, "look at my changes" → invoke `/review`
-- User asks about visual polish, design audit of a live site, "this looks off" → invoke `/design-review`
-- User asks to audit the live developer experience, time-to-hello-world → invoke `/devex-review`
-- User asks to ship, deploy, push, create a PR, "let's land this", "send it" → invoke `/ship`
-- User asks to merge + deploy + verify as one flow → invoke `/land-and-deploy`
-- User asks to configure deployment for the project → invoke `/setup-deploy`
-- User asks to monitor prod after shipping, post-deploy checks → invoke `/canary`
-- User asks to update docs after shipping → invoke `/document-release`
-- User asks to write docs from scratch, generate documentation, "document this feature/module" → invoke `/document-generate`
-- User asks for a weekly retro, what did we ship, "how'd we do" → invoke `/retro`
-- User asks for a second opinion, codex review → invoke `/codex`
-- User asks for safety mode, careful mode → invoke `/careful` or `/guard`
-- User asks to restrict edits to a directory → invoke `/freeze` or `/unfreeze`
-- User asks to upgrade gstack → invoke `/gstack-upgrade`
-- User asks to save progress, checkpoint, "save my work" → invoke `/context-save`
-- User asks to resume, restore, "where was I" → invoke `/context-restore`
-- User asks about security, OWASP, vulnerabilities, "is this secure" → invoke `/cso`
-- User asks to make a PDF, document, publication → invoke `/make-pdf`
-- User asks to launch a real browser for QA, "open the browser" → invoke `/open-gstack-browser`
-- User asks to import cookies for authenticated testing → invoke `/setup-browser-cookies`
-- User asks about page speed, performance regression, benchmarks → invoke `/benchmark`
-- User asks what gstack has learned, "show learnings" → invoke `/learn`
-- User asks to tune question sensitivity, "stop asking me that" → invoke `/plan-tune`
-- User asks for code quality dashboard, "health check" → invoke `/health`
-
-**When in doubt, invoke the skill.** A false positive (invoking a skill that wasn't
-needed) is cheaper than a false negative (answering ad-hoc when a structured workflow
-exists). The skill provides multi-step workflows, checklists, and quality gates that
-always produce better results than an ad-hoc answer. If no skill matches, answer
-directly as usual.
-
-If the user opts out of suggestions, run `gstack-config set proactive false`.
-If they opt back in, run `gstack-config set proactive true`.
+`bash scripts/install.sh --check` is the health check; `bash scripts/install.sh` installs or repairs and fast-forwards a checkout below the supported minimum. Between minimums, `~/.local/share/gstack/bin/gstack-upgrade --check` says whether the checkout is behind, and `~/.local/share/gstack/bin/gstack-upgrade` fast-forwards it to the tip of the default branch and reinstalls (it refuses dirty, diverged or pinned checkouts and never stashes or resets). The installer is for Capy's Ubuntu cloud machines with Git, curl, Node.js, flock and timeout; do not run it on a personal device without permission.
